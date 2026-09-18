@@ -1,4 +1,4 @@
-# Personal AI Agent — RAG + Memory + Tool-Using AI Assistant
+# Local ChatGPT — RAG + Memory + Tool-Using AI Assistant
 
 A personal AI chatbot/agent built to demonstrate real AI/ML engineering: LLM
 integration, conversation memory, document understanding (RAG), vector

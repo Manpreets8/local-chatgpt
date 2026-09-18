@@ -25,7 +25,7 @@ export default function Sidebar({
   return (
     <aside className={`sidebar ${isOpen ? "sidebar--open" : ""}`}>
       <div className="sidebar-header">
-        <span className="sidebar-title">Personal AI Agent</span>
+        <span className="sidebar-title">Local ChatGPT</span>
       </div>
 
       <nav className="sidebar-nav">

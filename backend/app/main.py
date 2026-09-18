@@ -7,7 +7,7 @@ from app.core.config import get_settings
 settings = get_settings()
 
 app = FastAPI(
-    title="Personal AI Agent",
+    title="Local ChatGPT",
     description="RAG + Memory + Tool-Using AI Assistant — backend API",
     version="0.1.0",
 )
