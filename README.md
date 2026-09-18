@@ -67,6 +67,14 @@ Then visit:
 - http://127.0.0.1:8000/health — liveness check
 - http://127.0.0.1:8000/docs — interactive API docs (Swagger UI)
 
+## Database (PostgreSQL via Docker)
+
+```bash
+docker compose up -d postgres
+cd backend
+alembic upgrade head
+```
+
 ## Frontend — Local Setup
 
 ```bash

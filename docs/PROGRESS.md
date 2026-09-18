@@ -18,9 +18,24 @@ Tracking features from the spec as they're built, one at a time.
       No persistence yet — that's Feature 2 (conversation memory in
       PostgreSQL), so "New Chat" and history are still local-only.
 
+- [x] Feature 2: Conversation memory — Postgres via Docker Compose,
+      SQLAlchemy models (`conversations`, `messages`), Alembic migrations,
+      `/chat` now persists history and replies with full context,
+      `GET/DELETE /conversations` endpoints. Frontend: sidebar with real
+      conversation list, click to reload history, delete, auto-derived
+      titles, collapsible drawer on mobile. Verified live: the exact
+      "My name is Manpreet" → "What is my name?" example from the spec
+      works correctly end to end (confirmed via direct DB inspection and
+      Playwright), plus New Chat, multi-conversation switching, delete,
+      and the mobile drawer. 11 backend tests passing (SQLite-backed, no
+      Docker needed to run the suite).
+      Known cosmetic gap: assistant replies containing Markdown (e.g.
+      headings, bold, bullet lists) render as raw text, not formatted —
+      candidate for a small follow-up, not blocking.
+
 ## Up Next
 
-- [ ] Feature 2: Conversation memory — PostgreSQL + Docker Compose,
+- [ ] Feature 3: Document upload (PDF/TXT/DOCX → extraction → chunking) — PostgreSQL + Docker Compose,
       conversations/messages tables, multi-turn context.
 - [ ] Feature 3: Document upload — extraction, cleaning, chunking pipeline.
 - [ ] Feature 4: Embeddings + FAISS vector store.

@@ -8,17 +8,18 @@ export class ApiError extends Error {
   }
 }
 
-export async function sendChatMessage(message) {
+async function request(path, options) {
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}/chat`, {
-      method: "POST",
+    response = await fetch(`${API_BASE_URL}${path}`, {
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      ...options,
     });
   } catch {
     throw new ApiError("Could not reach the server. Is the backend running?", 0);
   }
+
+  if (response.status === 204) return null;
 
   const data = await response.json().catch(() => null);
 
@@ -28,5 +29,25 @@ export async function sendChatMessage(message) {
     throw new ApiError(errorMessage, response.status);
   }
 
-  return data.reply;
+  return data;
+}
+
+export async function sendChatMessage(message, conversationId) {
+  const data = await request("/chat", {
+    method: "POST",
+    body: JSON.stringify({ message, conversation_id: conversationId ?? null }),
+  });
+  return data; // { reply, conversation_id }
+}
+
+export function listConversations() {
+  return request("/conversations");
+}
+
+export function getConversation(conversationId) {
+  return request(`/conversations/${conversationId}`);
+}
+
+export function deleteConversation(conversationId) {
+  return request(`/conversations/${conversationId}`, { method: "DELETE" });
 }

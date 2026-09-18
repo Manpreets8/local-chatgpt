@@ -1,71 +1,29 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import ChatMessage from "../components/ChatMessage.jsx";
-import { sendChatMessage } from "../services/api.js";
 
-let nextId = 1;
-
-export default function ChatPage() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+export default function ChatPage({
+  title,
+  messages,
+  isLoading,
+  input,
+  onInputChange,
+  onSend,
+  onMenuClick,
+}) {
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleNewConversation = () => {
-    setMessages([]);
-    setInput("");
-  };
-
-  const handleSend = async (event) => {
-    event.preventDefault();
-    const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
-
-    const userMessage = {
-      id: nextId++,
-      role: "user",
-      text: trimmed,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-    setTimeout(scrollToBottom, 0);
-
-    try {
-      const reply = await sendChatMessage(trimmed);
-      setMessages((prev) => [
-        ...prev,
-        { id: nextId++, role: "assistant", text: reply, timestamp: new Date() },
-      ]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: nextId++,
-          role: "assistant",
-          text: error.message,
-          timestamp: new Date(),
-          isError: true,
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-      setTimeout(scrollToBottom, 0);
-    }
-  };
+  }, [messages, isLoading]);
 
   return (
     <div className="chat-page">
       <header className="chat-header">
-        <h1>Personal AI Agent</h1>
-        <button type="button" className="new-chat-button" onClick={handleNewConversation}>
-          New Chat
+        <button type="button" className="menu-button" onClick={onMenuClick} aria-label="Toggle conversations">
+          ☰
         </button>
+        <h1>{title || "New Chat"}</h1>
       </header>
 
       <div className="chat-messages">
@@ -93,13 +51,13 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      <form className="chat-input-form" onSubmit={handleSend}>
+      <form className="chat-input-form" onSubmit={onSend}>
         <input
           type="text"
           className="chat-input"
           placeholder="Type a message..."
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => onInputChange(e.target.value)}
           disabled={isLoading}
         />
         <button type="submit" className="send-button" disabled={isLoading || !input.trim()}>

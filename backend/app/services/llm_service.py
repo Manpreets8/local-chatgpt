@@ -26,15 +26,18 @@ class LLMService:
             self._client = Anthropic(api_key=settings.anthropic_api_key)
         return self._client
 
-    def chat(self, message: str) -> str:
+    def chat(self, messages: list[dict[str, str]]) -> str:
         settings = get_settings()
         client = self._get_client()
         response = client.messages.create(
             model=settings.anthropic_model,
             max_tokens=1024,
-            messages=[{"role": "user", "content": message}],
+            messages=messages,
         )
-        return response.content[0].text
+        # The model may emit non-text blocks (e.g. internal "thinking")
+        # before its actual answer, so pick out the text blocks rather
+        # than assuming content[0] is the reply.
+        return "".join(block.text for block in response.content if block.type == "text")
 
 
 llm_service = LLMService()
