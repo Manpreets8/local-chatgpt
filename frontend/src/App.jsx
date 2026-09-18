@@ -8,6 +8,7 @@ import {
   getConversation,
   listConversations,
   sendChatMessage,
+  uploadDocument,
 } from "./services/api.js";
 
 let nextId = 1;
@@ -31,6 +32,13 @@ export default function App() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [pendingImage, setPendingImage] = useState(null);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (type, text) => {
+    setNotification({ type, text });
+    setTimeout(() => setNotification((current) => (current?.text === text ? null : current)), 4000);
+  };
 
   const refreshConversations = async () => {
     try {
@@ -52,8 +60,41 @@ export default function App() {
     setActiveTitle("");
     setMessages([]);
     setInput("");
+    setPendingImage(null);
     setIsSidebarOpen(false);
   };
+
+  const handleAttachFile = async (file) => {
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        const base64 = dataUrl.split(",")[1];
+        setPendingImage({ name: file.name, mediaType: file.type, base64, previewUrl: dataUrl });
+      };
+      reader.onerror = () => showNotification("error", "Could not read that image file.");
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Not an image — treat it as a document for the existing upload/RAG pipeline.
+    try {
+      const doc = await uploadDocument(file);
+      if (doc.status === "ready") {
+        const chunkLabel = doc.chunk_count === 1 ? "chunk" : "chunks";
+        showNotification(
+          "success",
+          `📄 ${doc.filename} uploaded (${doc.chunk_count} ${chunkLabel}).`
+        );
+      } else {
+        showNotification("error", `${doc.filename}: ${doc.error_message || "processing failed."}`);
+      }
+    } catch (error) {
+      showNotification("error", error.message);
+    }
+  };
+
+  const handleRemovePendingImage = () => setPendingImage(null);
 
   const handleSelectConversation = async (conversationId) => {
     try {
@@ -83,20 +124,27 @@ export default function App() {
   const handleSend = async (event) => {
     event.preventDefault();
     const trimmed = input.trim();
-    if (!trimmed || isSending) return;
+    if ((!trimmed && !pendingImage) || isSending) return;
 
+    const attachedImage = pendingImage;
     const userMessage = {
       id: `local-${nextId++}`,
       role: "user",
       text: trimmed,
       timestamp: new Date(),
+      imagePreviewUrl: attachedImage?.previewUrl,
     };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setPendingImage(null);
     setIsSending(true);
 
     try {
-      const data = await sendChatMessage(trimmed, activeConversationId);
+      const data = await sendChatMessage(
+        trimmed,
+        activeConversationId,
+        attachedImage ? { data: attachedImage.base64, mediaType: attachedImage.mediaType } : null
+      );
       setMessages((prev) => [
         ...prev,
         {
@@ -107,8 +155,9 @@ export default function App() {
         },
       ]);
       if (activeConversationId === null) {
+        const titleSource = trimmed || attachedImage?.name || "Image";
         setActiveConversationId(data.conversation_id);
-        setActiveTitle(trimmed.length > 50 ? `${trimmed.slice(0, 50)}…` : trimmed);
+        setActiveTitle(titleSource.length > 50 ? `${titleSource.slice(0, 50)}…` : titleSource);
       }
       refreshConversations();
     } catch (error) {
@@ -160,6 +209,10 @@ export default function App() {
           onInputChange={setInput}
           onSend={handleSend}
           onMenuClick={() => setIsSidebarOpen((open) => !open)}
+          pendingImage={pendingImage}
+          onAttachFile={handleAttachFile}
+          onRemovePendingImage={handleRemovePendingImage}
+          notification={notification}
         />
       ) : (
         <DocumentsPage onMenuClick={() => setIsSidebarOpen((open) => !open)} />

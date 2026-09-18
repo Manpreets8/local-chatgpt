@@ -52,22 +52,42 @@ Tracking features from the spec as they're built, one at a time.
       Feature 4 (RAG) rather than bundled in, so each feature stays
       independently testable.
 
+- [x] UI polish: renamed app to "Local ChatGPT" (sidebar, tab title,
+      FastAPI docs, README); redesigned as one cohesive dark theme
+      (was a mismatched dark sidebar + white content) with a subtle
+      gradient background and gradient accents on primary actions.
+
+- [x] Chat attachments: a `+` button beside the message input supports
+      two kinds of attachment. Images (PNG/JPEG/WEBP/GIF) are base64-
+      encoded client-side and sent straight to Claude's vision
+      capability for that turn only — not persisted as base64 in the
+      DB (would bloat storage and get resent on every later turn), so
+      the stored message text is a placeholder (`[Image attached]`)
+      and image context doesn't carry into later turns. PDF/TXT/DOCX
+      picked from the same button go through the existing document
+      upload pipeline (Feature 3), with a toast-style notification
+      confirming chunk count or failure. Backend validates image type/
+      size and requires text-or-image (not neither). 37 backend tests
+      passing; verified live with a real generated PNG (Claude
+      correctly identified "solid red square") and a real doc upload,
+      both through the actual browser UI via Playwright.
+
 ## Up Next
 
 - [ ] Feature 4: RAG — embeddings (Sentence Transformers) + FAISS
       vector store + retrieval-augmented chat answers with source
-      citations (document name + page number) — PostgreSQL + Docker Compose,
-      conversations/messages tables, multi-turn context.
-- [ ] Feature 3: Document upload — extraction, cleaning, chunking pipeline.
-- [ ] Feature 4: Embeddings + FAISS vector store.
-- [ ] Feature 5: RAG — retrieval-augmented answers with source citations.
+      citations (document name + page number).
 - [ ] Feature 6: Tool-using agent (calculator, doc search, db search, date/time).
 - [ ] Feature 7: Resume analyzer.
 - [ ] Feature 8: AI document summaries.
 - [ ] Feature 9: Auth (register/login, JWT, password hashing).
-- [ ] Feature 10: Full dashboard UI (sidebar, documents page, resume analyzer page).
+- [ ] Feature 10: Full dashboard UI (settings page, resume analyzer page).
 - [ ] Feature 11: RAG evaluation.
-- [ ] Docker Compose wiring for backend + frontend + Postgres.
+- [ ] Docker Compose wiring for backend + frontend containers (Postgres
+      is already containerized; backend/frontend still run via
+      venv/npm locally).
+- [ ] Known cosmetic gap: assistant replies containing Markdown (e.g.
+      headings, bold, bullet lists) render as raw text, not formatted.
 
 ## Notes / Decisions
 

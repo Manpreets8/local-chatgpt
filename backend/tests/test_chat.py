@@ -72,3 +72,66 @@ def test_chat_returns_503_when_llm_not_configured(db_session, monkeypatch):
 
     response = client.post("/chat", json={"message": "hello"})
     assert response.status_code == 503
+
+
+# A 1x1 transparent PNG, base64-encoded, just for exercising the image path.
+TINY_PNG_BASE64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42"
+    "YAAAAASUVORK5CYII="
+)
+
+
+def test_chat_accepts_image_only_message_without_text(db_session, monkeypatch):
+    captured = {}
+
+    def fake_chat(messages):
+        captured["messages"] = messages
+        return "I see a small image."
+
+    monkeypatch.setattr(llm_service_module.llm_service, "chat", fake_chat)
+
+    response = client.post(
+        "/chat",
+        json={
+            "message": "",
+            "image_data": TINY_PNG_BASE64,
+            "image_media_type": "image/png",
+        },
+    )
+
+    assert response.status_code == 200
+    last_content = captured["messages"][-1]["content"]
+    assert isinstance(last_content, list)
+    assert last_content[0]["type"] == "image"
+    assert last_content[0]["source"]["media_type"] == "image/png"
+    assert last_content[1]["type"] == "text"
+
+
+def test_chat_stores_placeholder_text_for_image_only_message(db_session, monkeypatch):
+    monkeypatch.setattr(llm_service_module.llm_service, "chat", lambda messages: "a reply")
+
+    response = client.post(
+        "/chat",
+        json={"message": "", "image_data": TINY_PNG_BASE64, "image_media_type": "image/png"},
+    )
+    conversation_id = response.json()["conversation_id"]
+
+    detail = client.get(f"/conversations/{conversation_id}")
+    assert detail.json()["messages"][0]["content"] == "[Image attached]"
+
+
+def test_chat_rejects_unsupported_image_type(db_session):
+    response = client.post(
+        "/chat",
+        json={
+            "message": "what is this",
+            "image_data": TINY_PNG_BASE64,
+            "image_media_type": "application/pdf",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_chat_rejects_no_text_and_no_image(db_session):
+    response = client.post("/chat", json={"message": "   "})
+    assert response.status_code == 422

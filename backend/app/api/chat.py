@@ -20,10 +20,27 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
     except conversation_service.ConversationNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    conversation_service.add_message(db, conversation, "user", request.message)
+    # Stored history stays plain text even for image messages — resending
+    # a full-size image on every later turn would be slow and expensive,
+    # so an attached image only affects the current request to Claude.
+    stored_text = request.message.strip() or "[Image attached]"
+    conversation_service.add_message(db, conversation, "user", stored_text)
     if is_new_conversation:
-        conversation.title = conversation_service.derive_title(request.message)
+        conversation.title = conversation_service.derive_title(stored_text)
     history = conversation_service.get_history_for_llm(conversation)
+
+    if request.image_data:
+        history[-1]["content"] = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": request.image_media_type,
+                    "data": request.image_data,
+                },
+            },
+            {"type": "text", "text": request.message.strip() or "What's in this image?"},
+        ]
 
     try:
         reply = llm_service.chat(history)

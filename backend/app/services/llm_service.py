@@ -1,3 +1,5 @@
+from typing import Any
+
 from anthropic import Anthropic, APIError
 
 from app.core.config import get_settings
@@ -26,7 +28,7 @@ class LLMService:
             self._client = Anthropic(api_key=settings.anthropic_api_key)
         return self._client
 
-    def chat(self, messages: list[dict[str, str]]) -> str:
+    def chat(self, messages: list[dict[str, Any]]) -> str:
         settings = get_settings()
         client = self._get_client()
         response = client.messages.create(

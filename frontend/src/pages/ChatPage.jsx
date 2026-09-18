@@ -10,12 +10,23 @@ export default function ChatPage({
   onInputChange,
   onSend,
   onMenuClick,
+  pendingImage,
+  onAttachFile,
+  onRemovePendingImage,
+  notification,
 }) {
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) onAttachFile(file);
+    event.target.value = "";
+  };
 
   return (
     <div className="chat-page">
@@ -25,6 +36,12 @@ export default function ChatPage({
         </button>
         <h1>{title || "New Chat"}</h1>
       </header>
+
+      {notification && (
+        <div className={`chat-notification chat-notification--${notification.type}`}>
+          {notification.text}
+        </div>
+      )}
 
       <div className="chat-messages">
         {messages.length === 0 && (
@@ -37,6 +54,7 @@ export default function ChatPage({
             text={m.text}
             timestamp={m.timestamp}
             isError={m.isError}
+            imagePreviewUrl={m.imagePreviewUrl}
           />
         ))}
         {isLoading && (
@@ -51,7 +69,33 @@ export default function ChatPage({
         <div ref={messagesEndRef} />
       </div>
 
+      {pendingImage && (
+        <div className="pending-attachment">
+          <img src={pendingImage.previewUrl} alt="Selected attachment" />
+          <span className="pending-attachment-name">{pendingImage.name}</span>
+          <button
+            type="button"
+            className="pending-attachment-remove"
+            onClick={onRemovePendingImage}
+            aria-label="Remove attachment"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <form className="chat-input-form" onSubmit={onSend}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          id="chat-attach-input"
+          accept="image/png,image/jpeg,image/webp,image/gif,.pdf,.txt,.docx"
+          onChange={handleFileChange}
+          hidden
+        />
+        <label htmlFor="chat-attach-input" className="attach-button" title="Attach a photo or document">
+          +
+        </label>
         <input
           type="text"
           className="chat-input"
@@ -60,7 +104,11 @@ export default function ChatPage({
           onChange={(e) => onInputChange(e.target.value)}
           disabled={isLoading}
         />
-        <button type="submit" className="send-button" disabled={isLoading || !input.trim()}>
+        <button
+          type="submit"
+          className="send-button"
+          disabled={isLoading || (!input.trim() && !pendingImage)}
+        >
           Send
         </button>
       </form>

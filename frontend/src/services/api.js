@@ -32,10 +32,15 @@ async function request(path, options) {
   return data;
 }
 
-export async function sendChatMessage(message, conversationId) {
+export async function sendChatMessage(message, conversationId, image) {
   const data = await request("/chat", {
     method: "POST",
-    body: JSON.stringify({ message, conversation_id: conversationId ?? null }),
+    body: JSON.stringify({
+      message,
+      conversation_id: conversationId ?? null,
+      image_data: image?.data ?? null,
+      image_media_type: image?.mediaType ?? null,
+    }),
   });
   return data; // { reply, conversation_id }
 }

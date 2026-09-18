@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.models.conversation import Conversation
@@ -33,7 +35,7 @@ def add_message(db: Session, conversation: Conversation, role: str, content: str
     return message
 
 
-def get_history_for_llm(conversation: Conversation) -> list[dict[str, str]]:
+def get_history_for_llm(conversation: Conversation) -> list[dict[str, Any]]:
     return [{"role": m.role, "content": m.content} for m in conversation.messages]
 
 
