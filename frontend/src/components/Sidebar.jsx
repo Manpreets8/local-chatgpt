@@ -12,6 +12,8 @@ function formatRelativeTime(isoString) {
 }
 
 export default function Sidebar({
+  view,
+  onNavigate,
   conversations,
   activeConversationId,
   onSelectConversation,
@@ -26,43 +28,68 @@ export default function Sidebar({
         <span className="sidebar-title">Personal AI Agent</span>
       </div>
 
-      <button type="button" className="new-chat-button" onClick={onNewChat}>
-        + New Chat
-      </button>
+      <nav className="sidebar-nav">
+        <button
+          type="button"
+          className={`sidebar-nav-item ${view === "chat" ? "sidebar-nav-item--active" : ""}`}
+          onClick={() => onNavigate("chat")}
+        >
+          Chat
+        </button>
+        <button
+          type="button"
+          className={`sidebar-nav-item ${
+            view === "documents" ? "sidebar-nav-item--active" : ""
+          }`}
+          onClick={() => onNavigate("documents")}
+        >
+          Documents
+        </button>
+      </nav>
 
-      <div className="sidebar-section-label">Conversations</div>
+      {view === "chat" && (
+        <>
+          <button type="button" className="new-chat-button" onClick={onNewChat}>
+            + New Chat
+          </button>
 
-      <div className="conversation-list">
-        {isLoading && <div className="sidebar-empty">Loading…</div>}
-        {!isLoading && conversations.length === 0 && (
-          <div className="sidebar-empty">No conversations yet.</div>
-        )}
-        {conversations.map((c) => (
-          <div
-            key={c.id}
-            className={`conversation-item ${
-              c.id === activeConversationId ? "conversation-item--active" : ""
-            }`}
-            onClick={() => onSelectConversation(c.id)}
-          >
-            <div className="conversation-item-text">
-              <div className="conversation-item-title">{c.title}</div>
-              <div className="conversation-item-time">{formatRelativeTime(c.updated_at)}</div>
-            </div>
-            <button
-              type="button"
-              className="conversation-delete-button"
-              title="Delete conversation"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteConversation(c.id);
-              }}
-            >
-              ×
-            </button>
+          <div className="sidebar-section-label">Conversations</div>
+
+          <div className="conversation-list">
+            {isLoading && <div className="sidebar-empty">Loading…</div>}
+            {!isLoading && conversations.length === 0 && (
+              <div className="sidebar-empty">No conversations yet.</div>
+            )}
+            {conversations.map((c) => (
+              <div
+                key={c.id}
+                className={`conversation-item ${
+                  c.id === activeConversationId ? "conversation-item--active" : ""
+                }`}
+                onClick={() => onSelectConversation(c.id)}
+              >
+                <div className="conversation-item-text">
+                  <div className="conversation-item-title">{c.title}</div>
+                  <div className="conversation-item-time">
+                    {formatRelativeTime(c.updated_at)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="conversation-delete-button"
+                  title="Delete conversation"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteConversation(c.id);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </aside>
   );
 }

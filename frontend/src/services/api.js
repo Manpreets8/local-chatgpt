@@ -51,3 +51,36 @@ export function getConversation(conversationId) {
 export function deleteConversation(conversationId) {
   return request(`/conversations/${conversationId}`, { method: "DELETE" });
 }
+
+export async function uploadDocument(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/documents/upload`, {
+      method: "POST",
+      body: formData,
+    });
+  } catch {
+    throw new ApiError("Could not reach the server. Is the backend running?", 0);
+  }
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const detail = data?.detail;
+    const errorMessage = typeof detail === "string" ? detail : "Something went wrong.";
+    throw new ApiError(errorMessage, response.status);
+  }
+
+  return data;
+}
+
+export function listDocuments() {
+  return request("/documents");
+}
+
+export function deleteDocument(documentId) {
+  return request(`/documents/${documentId}`, { method: "DELETE" });
+}

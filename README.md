@@ -13,6 +13,8 @@ This project is being built incrementally, one feature at a time. See
 - **Backend:** Python 3.11, FastAPI, Pydantic, SQLAlchemy, PostgreSQL
 - **AI/ML:** Anthropic Claude API, Sentence Transformers, FAISS (vector search,
   designed so pgvector can be swapped in later), scikit-learn
+- **Document processing:** pypdf, python-docx (PDF/TXT/DOCX → text extraction
+  → cleaning → chunking)
 - **Frontend:** React, JavaScript
 - **Infra:** Docker, Docker Compose, pytest
 

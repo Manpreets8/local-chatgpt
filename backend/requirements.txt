@@ -1,11 +1,13 @@
 # Dependencies are added incrementally as each feature is built,
-# not all at once. This file currently covers: scaffolding + chat + memory.
+# not all at once. This file currently covers: scaffolding + chat +
+# memory + document upload.
 
 # --- Web framework ---
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
 pydantic-settings==2.7.1
+python-multipart==0.0.20
 
 # --- AI / LLM ---
 anthropic==0.40.0
@@ -14,6 +16,10 @@ anthropic==0.40.0
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 alembic==1.14.0
+
+# --- Document processing ---
+pypdf==5.1.0
+python-docx==1.1.2
 
 # --- Testing ---
 pytest==8.3.4

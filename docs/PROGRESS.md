@@ -33,9 +33,30 @@ Tracking features from the spec as they're built, one at a time.
       headings, bold, bullet lists) render as raw text, not formatted —
       candidate for a small follow-up, not blocking.
 
+- [x] Feature 3: Document upload — `documents` / `document_chunks` tables
+      (Alembic migration), extraction (pypdf for PDF, python-docx for
+      DOCX, plain decode for TXT) → cleaning → chunking (800 chars,
+      100 overlap, page numbers preserved for PDFs). `POST
+      /documents/upload` validates type (PDF/TXT/DOCX only) and size
+      (10MB max), processes synchronously, and marks status
+      ready/failed (e.g. empty/unextractable content) rather than
+      crashing on bad input. `GET/DELETE /documents` for listing and
+      removal (also deletes the file from `data/uploads/`). Frontend:
+      new Documents page (sidebar nav: Chat / Documents) with upload
+      button, status badges, chunk counts, delete — responsive with
+      horizontal scroll on mobile. 33 backend tests passing, including
+      a real generated PDF with actual extractable text (not mocked)
+      and a real DOCX built with python-docx. Verified live via
+      Playwright: upload PDF, upload TXT, delete, mobile layout.
+      No embeddings/vector storage yet — deliberately split off as
+      Feature 4 (RAG) rather than bundled in, so each feature stays
+      independently testable.
+
 ## Up Next
 
-- [ ] Feature 3: Document upload (PDF/TXT/DOCX → extraction → chunking) — PostgreSQL + Docker Compose,
+- [ ] Feature 4: RAG — embeddings (Sentence Transformers) + FAISS
+      vector store + retrieval-augmented chat answers with source
+      citations (document name + page number) — PostgreSQL + Docker Compose,
       conversations/messages tables, multi-turn context.
 - [ ] Feature 3: Document upload — extraction, cleaning, chunking pipeline.
 - [ ] Feature 4: Embeddings + FAISS vector store.

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import Sidebar from "./components/Sidebar.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
+import DocumentsPage from "./pages/DocumentsPage.jsx";
 import {
   deleteConversation,
   getConversation,
@@ -21,6 +22,7 @@ function messagesFromHistory(history) {
 }
 
 export default function App() {
+  const [view, setView] = useState("chat");
   const [conversations, setConversations] = useState([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState(null);
@@ -125,12 +127,22 @@ export default function App() {
     }
   };
 
+  const handleNavigate = (nextView) => {
+    setView(nextView);
+    setIsSidebarOpen(false);
+  };
+
   return (
     <div className="app-layout">
       <Sidebar
+        view={view}
+        onNavigate={handleNavigate}
         conversations={conversations}
         activeConversationId={activeConversationId}
-        onSelectConversation={handleSelectConversation}
+        onSelectConversation={(id) => {
+          setView("chat");
+          handleSelectConversation(id);
+        }}
         onNewChat={handleNewChat}
         onDeleteConversation={handleDeleteConversation}
         isLoading={isLoadingConversations}
@@ -139,15 +151,19 @@ export default function App() {
       {isSidebarOpen && (
         <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
       )}
-      <ChatPage
-        title={activeTitle}
-        messages={messages}
-        isLoading={isSending}
-        input={input}
-        onInputChange={setInput}
-        onSend={handleSend}
-        onMenuClick={() => setIsSidebarOpen((open) => !open)}
-      />
+      {view === "chat" ? (
+        <ChatPage
+          title={activeTitle}
+          messages={messages}
+          isLoading={isSending}
+          input={input}
+          onInputChange={setInput}
+          onSend={handleSend}
+          onMenuClick={() => setIsSidebarOpen((open) => !open)}
+        />
+      ) : (
+        <DocumentsPage onMenuClick={() => setIsSidebarOpen((open) => !open)} />
+      )}
     </div>
   );
 }
