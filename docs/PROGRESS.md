@@ -6,11 +6,14 @@ Tracking features from the spec as they're built, one at a time.
 
 - [x] Project scaffolding — folder structure, git, FastAPI skeleton,
       `/health` endpoint, pytest set up and passing, Dockerfile for backend.
+- [x] Feature 1 (backend half): `POST /chat` single-turn endpoint calling
+      the Claude API via `LLMService` (`app/services/llm_service.py`).
+      Handles missing API key (503) and API errors (502) cleanly. 4 tests
+      passing, verified live with curl. Frontend chat UI still to do.
 
 ## Up Next
 
-- [ ] Feature 1: AI Chat — single-turn chat endpoint using the Claude API
-      (no memory yet), plus a minimal React chat UI to talk to it.
+- [ ] Feature 1 (frontend half): minimal React chat UI wired to `POST /chat`.
 - [ ] Feature 2: Conversation memory — PostgreSQL + Docker Compose,
       conversations/messages tables, multi-turn context.
 - [ ] Feature 3: Document upload — extraction, cleaning, chunking pipeline.

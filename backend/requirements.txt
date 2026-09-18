@@ -1,11 +1,14 @@
 # Dependencies are added incrementally as each feature is built,
-# not all at once. This file currently covers: project scaffolding.
+# not all at once. This file currently covers: project scaffolding + chat.
 
 # --- Web framework ---
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
 pydantic-settings==2.7.1
+
+# --- AI / LLM ---
+anthropic==0.40.0
 
 # --- Testing ---
 pytest==8.3.4
