@@ -67,6 +67,20 @@ Then visit:
 - http://127.0.0.1:8000/health — liveness check
 - http://127.0.0.1:8000/docs — interactive API docs (Swagger UI)
 
+## Frontend — Local Setup
+
+```bash
+cd frontend
+npm install
+
+# copy the env template and point it at your backend
+cp .env.example .env
+
+npm run dev
+```
+
+Then visit http://localhost:5173 for the chat UI.
+
 ## Running Tests
 
 ```bash

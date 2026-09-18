@@ -9,11 +9,17 @@ Tracking features from the spec as they're built, one at a time.
 - [x] Feature 1 (backend half): `POST /chat` single-turn endpoint calling
       the Claude API via `LLMService` (`app/services/llm_service.py`).
       Handles missing API key (503) and API errors (502) cleanly. 4 tests
-      passing, verified live with curl. Frontend chat UI still to do.
+      passing, verified live with curl and a real API key/billing.
+- [x] Feature 1 (frontend half): React + Vite chat UI (`frontend/src`) —
+      message bubbles, timestamps, loading indicator (typing dots), error
+      display, New Chat (clears in-memory state), responsive down to
+      mobile width. Verified live with Playwright: real user message sent,
+      real Claude reply rendered, screenshots checked on desktop + mobile.
+      No persistence yet — that's Feature 2 (conversation memory in
+      PostgreSQL), so "New Chat" and history are still local-only.
 
 ## Up Next
 
-- [ ] Feature 1 (frontend half): minimal React chat UI wired to `POST /chat`.
 - [ ] Feature 2: Conversation memory — PostgreSQL + Docker Compose,
       conversations/messages tables, multi-turn context.
 - [ ] Feature 3: Document upload — extraction, cleaning, chunking pipeline.
