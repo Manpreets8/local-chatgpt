@@ -97,6 +97,35 @@ Tracking features from the spec as they're built, one at a time.
       verified live via curl that a second real user cannot read a first
       user's conversation by guessing/reusing its id.
 
+- [x] AI image generation — a "🎨 Generate Image" composer mode (toggle
+      next to the message input, alongside "💬 Chat") generates a new
+      image from a text prompt via Pollinations.ai's free, keyless
+      `sana` model. Started as "edit an uploaded photo" per the user's
+      request, but every provider tested gates actual photo-editing
+      behind billing:
+        - OpenAI gpt-image-1: no free tier at all.
+        - Google Gemini image model: free-tier quota is 0 for image
+          generation specifically (confirmed live — a valid, working
+          key still gets `RESOURCE_EXHAUSTED`), despite Gemini's text
+          models having a real free tier.
+        - Pollinations.ai's image-editing model ("kontext") now requires
+          their own paid tier too.
+      Pure text-to-image generation (no input photo) is the one thing
+      that's actually free everywhere tested, so the feature was
+      rescoped to that rather than silently shipping something that
+      only works with a paid key. Known limitation: Pollinations' free
+      tier stamps a small watermark on results even with `nologo=true`
+      requested — removing it isn't available for free either.
+      Backend: `generated_images` table (prompt, content_type) plus a
+      nullable `generated_image_id` FK on `messages`, so generated
+      images live in real conversation history (not a side flow) and
+      reload correctly later — `GET /images/{id}` streams the bytes,
+      ownership-checked like every other resource. 62 backend tests
+      passing. Verified live: a real generated image (a 3D-Pixar-style
+      baby dragon) through the actual browser via Playwright, confirmed
+      it persists correctly after a full page reload and reopening the
+      conversation.
+
 ## Up Next
 
 - [ ] Feature 4: RAG — embeddings (Sentence Transformers) + FAISS

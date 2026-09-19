@@ -349,6 +349,7 @@ body {
 .pending-attachment {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin: 12px 20px 0;
   padding: 8px 10px;
@@ -357,6 +358,37 @@ body {
   border-radius: 10px;
   width: fit-content;
   max-width: calc(100% - 40px);
+}
+
+.composer-mode-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  margin: 12px 20px 0;
+  width: fit-content;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.mode-toggle-button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mode-toggle-button:hover {
+  color: var(--text-primary);
+}
+
+.mode-toggle-button--active {
+  background: var(--accent-gradient);
+  color: #fff;
 }
 
 .pending-attachment img {

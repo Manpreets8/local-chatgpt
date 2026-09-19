@@ -1,6 +1,6 @@
 # Dependencies are added incrementally as each feature is built,
 # not all at once. This file currently covers: scaffolding + chat +
-# memory + document upload + auth.
+# memory + document upload + auth + image generation.
 
 # --- Web framework ---
 fastapi==0.115.6
@@ -12,6 +12,9 @@ email-validator==2.2.0
 
 # --- AI / LLM ---
 anthropic==0.40.0
+
+# --- Image generation (Pollinations.ai — free, keyless HTTP API) ---
+httpx==0.28.1
 
 # --- Database ---
 sqlalchemy==2.0.36
@@ -28,4 +31,3 @@ python-docx==1.1.2
 
 # --- Testing ---
 pytest==8.3.4
-httpx==0.28.1

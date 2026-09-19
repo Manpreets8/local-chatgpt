@@ -28,6 +28,7 @@ yarn-error.log*
 
 # --- Data / uploads (never commit user files) ---
 data/uploads/
+data/generated/
 data/vector_store/
 *.faiss
 *.index

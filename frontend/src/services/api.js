@@ -148,3 +148,31 @@ export function listDocuments() {
 export function deleteDocument(documentId) {
   return request(`/documents/${documentId}`, { method: "DELETE" });
 }
+
+export async function generateImage(prompt, conversationId) {
+  return request("/images/generate", {
+    method: "POST",
+    body: JSON.stringify({ prompt, conversation_id: conversationId ?? null }),
+  });
+}
+
+export async function fetchGeneratedImageUrl(imageId) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/images/${imageId}`, {
+      headers: { ...authHeaders() },
+    });
+  } catch {
+    throw new ApiError("Could not reach the server. Is the backend running?", 0);
+  }
+
+  if (response.status === 401) {
+    unauthorizedHandler();
+  }
+  if (!response.ok) {
+    throw new ApiError("Could not load generated image.", response.status);
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}

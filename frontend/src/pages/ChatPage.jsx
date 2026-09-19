@@ -13,10 +13,13 @@ export default function ChatPage({
   pendingImage,
   onAttachFile,
   onRemovePendingImage,
+  composerMode,
+  onSetComposerMode,
   notification,
 }) {
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const isImageMode = composerMode === "image";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -45,7 +48,9 @@ export default function ChatPage({
 
       <div className="chat-messages">
         {messages.length === 0 && (
-          <div className="chat-empty-state">Ask me anything to get started.</div>
+          <div className="chat-empty-state">
+            {isImageMode ? "Describe an image to generate." : "Ask me anything to get started."}
+          </div>
         )}
         {messages.map((m) => (
           <ChatMessage
@@ -69,7 +74,7 @@ export default function ChatPage({
         <div ref={messagesEndRef} />
       </div>
 
-      {pendingImage && (
+      {pendingImage && !isImageMode && (
         <div className="pending-attachment">
           <img src={pendingImage.previewUrl} alt="Selected attachment" />
           <span className="pending-attachment-name">{pendingImage.name}</span>
@@ -84,22 +89,50 @@ export default function ChatPage({
         </div>
       )}
 
+      <div className="composer-mode-toggle">
+        <button
+          type="button"
+          className={`mode-toggle-button ${!isImageMode ? "mode-toggle-button--active" : ""}`}
+          onClick={() => onSetComposerMode("chat")}
+        >
+          💬 Chat
+        </button>
+        <button
+          type="button"
+          className={`mode-toggle-button ${isImageMode ? "mode-toggle-button--active" : ""}`}
+          onClick={() => onSetComposerMode("image")}
+          title="Generate a new AI image from a text description"
+        >
+          🎨 Generate Image
+        </button>
+      </div>
+
       <form className="chat-input-form" onSubmit={onSend}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          id="chat-attach-input"
-          accept="image/png,image/jpeg,image/webp,image/gif,.pdf,.txt,.docx"
-          onChange={handleFileChange}
-          hidden
-        />
-        <label htmlFor="chat-attach-input" className="attach-button" title="Attach a photo or document">
-          +
-        </label>
+        {!isImageMode && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              id="chat-attach-input"
+              accept="image/png,image/jpeg,image/webp,image/gif,.pdf,.txt,.docx"
+              onChange={handleFileChange}
+              hidden
+            />
+            <label
+              htmlFor="chat-attach-input"
+              className="attach-button"
+              title="Attach a photo or document"
+            >
+              +
+            </label>
+          </>
+        )}
         <input
           type="text"
           className="chat-input"
-          placeholder="Type a message..."
+          placeholder={
+            isImageMode ? "Describe the image you want (e.g. 3D Pixar-style robot)…" : "Type a message..."
+          }
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
           disabled={isLoading}
@@ -107,7 +140,7 @@ export default function ChatPage({
         <button
           type="submit"
           className="send-button"
-          disabled={isLoading || (!input.trim() && !pendingImage)}
+          disabled={isLoading || (!input.trim() && !(pendingImage && !isImageMode))}
         >
           Send
         </button>

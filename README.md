@@ -15,6 +15,7 @@ This project is being built incrementally, one feature at a time. See
   designed so pgvector can be swapped in later), scikit-learn
 - **Document processing:** pypdf, python-docx (PDF/TXT/DOCX → text extraction
   → cleaning → chunking)
+- **Image generation:** Pollinations.ai (free, keyless text-to-image API)
 - **Frontend:** React, JavaScript
 - **Infra:** Docker, Docker Compose, pytest
 
@@ -109,6 +110,7 @@ Copy `.env.example` to `.env` at the project root and fill in real secrets
 
 Implemented so far: chat (Claude API), conversation memory (PostgreSQL),
 document upload (PDF/TXT/DOCX extraction + chunking), image attachments
-(Claude vision), and authentication (JWT, bcrypt, per-user data isolation).
+(Claude vision), AI image generation (free text-to-image), and
+authentication (JWT, bcrypt, per-user data isolation).
 Being built incrementally — see [docs/PROGRESS.md](docs/PROGRESS.md) for
 what's done and what's next (RAG, tool-calling agent, resume analyzer).

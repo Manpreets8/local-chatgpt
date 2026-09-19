@@ -6,6 +6,8 @@ import ChatPage from "./pages/ChatPage.jsx";
 import DocumentsPage from "./pages/DocumentsPage.jsx";
 import {
   deleteConversation,
+  fetchGeneratedImageUrl,
+  generateImage,
   getConversation,
   getCurrentUser,
   getAuthToken,
@@ -18,13 +20,26 @@ import {
 
 let nextId = 1;
 
-function messagesFromHistory(history) {
-  return history.map((m) => ({
-    id: `${m.id}`,
-    role: m.role,
-    text: m.content,
-    timestamp: new Date(m.created_at),
-  }));
+async function messagesFromHistory(history) {
+  return Promise.all(
+    history.map(async (m) => {
+      let imagePreviewUrl;
+      if (m.generated_image_id) {
+        try {
+          imagePreviewUrl = await fetchGeneratedImageUrl(m.generated_image_id);
+        } catch {
+          imagePreviewUrl = undefined;
+        }
+      }
+      return {
+        id: `${m.id}`,
+        role: m.role,
+        text: m.content,
+        timestamp: new Date(m.created_at),
+        imagePreviewUrl,
+      };
+    })
+  );
 }
 
 export default function App() {
@@ -41,6 +56,7 @@ export default function App() {
   const [isSending, setIsSending] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pendingImage, setPendingImage] = useState(null);
+  const [composerMode, setComposerMode] = useState("chat");
   const [notification, setNotification] = useState(null);
 
   const showNotification = (type, text) => {
@@ -56,6 +72,7 @@ export default function App() {
     setMessages([]);
     setInput("");
     setPendingImage(null);
+    setComposerMode("chat");
     setNotification(null);
   };
 
@@ -106,6 +123,7 @@ export default function App() {
     setMessages([]);
     setInput("");
     setPendingImage(null);
+    setComposerMode("chat");
     setIsSidebarOpen(false);
   };
 
@@ -144,9 +162,10 @@ export default function App() {
   const handleSelectConversation = async (conversationId) => {
     try {
       const data = await getConversation(conversationId);
+      const resolvedMessages = await messagesFromHistory(data.messages);
       setActiveConversationId(data.id);
       setActiveTitle(data.title);
-      setMessages(messagesFromHistory(data.messages));
+      setMessages(resolvedMessages);
       setIsSidebarOpen(false);
     } catch {
       // if it failed to load (e.g. deleted elsewhere), just refresh the list
@@ -169,9 +188,10 @@ export default function App() {
   const handleSend = async (event) => {
     event.preventDefault();
     const trimmed = input.trim();
-    if ((!trimmed && !pendingImage) || isSending) return;
+    const isImageMode = composerMode === "image";
+    if ((!trimmed && !(pendingImage && !isImageMode)) || isSending) return;
 
-    const attachedImage = pendingImage;
+    const attachedImage = isImageMode ? null : pendingImage;
     const userMessage = {
       id: `local-${nextId++}`,
       role: "user",
@@ -185,6 +205,26 @@ export default function App() {
     setIsSending(true);
 
     try {
+      if (isImageMode) {
+        const data = await generateImage(trimmed, activeConversationId);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `local-${nextId++}`,
+            role: "assistant",
+            text: "Here's your generated image.",
+            timestamp: new Date(),
+            imagePreviewUrl: `data:image/png;base64,${data.image_data}`,
+          },
+        ]);
+        if (activeConversationId === null) {
+          setActiveConversationId(data.conversation_id);
+          setActiveTitle(trimmed.length > 50 ? `${trimmed.slice(0, 50)}…` : trimmed);
+        }
+        refreshConversations();
+        return;
+      }
+
       const data = await sendChatMessage(
         trimmed,
         activeConversationId,
@@ -267,6 +307,8 @@ export default function App() {
           pendingImage={pendingImage}
           onAttachFile={handleAttachFile}
           onRemovePendingImage={handleRemovePendingImage}
+          composerMode={composerMode}
+          onSetComposerMode={setComposerMode}
           notification={notification}
         />
       ) : (

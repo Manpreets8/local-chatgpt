@@ -22,3 +22,6 @@ class User(Base):
     documents: Mapped[list["Document"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    generated_images: Mapped[list["GeneratedImage"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )

@@ -34,8 +34,19 @@ def get_or_create_conversation(
     return conversation
 
 
-def add_message(db: Session, conversation: Conversation, role: str, content: str) -> Message:
-    message = Message(conversation_id=conversation.id, role=role, content=content)
+def add_message(
+    db: Session,
+    conversation: Conversation,
+    role: str,
+    content: str,
+    generated_image_id: int | None = None,
+) -> Message:
+    message = Message(
+        conversation_id=conversation.id,
+        role=role,
+        content=content,
+        generated_image_id=generated_image_id,
+    )
     db.add(message)
     db.flush()
     return message

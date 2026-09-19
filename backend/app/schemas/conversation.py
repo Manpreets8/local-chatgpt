@@ -9,6 +9,7 @@ class MessageOut(BaseModel):
     id: int
     role: str
     content: str
+    generated_image_id: int | None = None
     created_at: datetime.datetime
 
 
