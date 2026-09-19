@@ -1,10 +1,15 @@
+import itertools
+
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
 from app.main import app
+
+_email_counter = itertools.count(1)
 
 
 @pytest.fixture()
@@ -30,3 +35,17 @@ def db_session():
     yield testing_session_local
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture()
+def auth_headers(db_session):
+    """Registers a fresh test user and returns an Authorization header
+    for it. Most endpoints now require auth, so this is the standard
+    way tests act as a logged-in user."""
+    client = TestClient(app)
+    email = f"user{next(_email_counter)}@example.com"
+    response = client.post(
+        "/auth/register", json={"email": email, "password": "testpassword123"}
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}

@@ -12,17 +12,23 @@ class ConversationNotFoundError(Exception):
         self.conversation_id = conversation_id
 
 
-def get_or_create_conversation(db: Session, conversation_id: int | None) -> Conversation:
+def get_or_create_conversation(
+    db: Session, user_id: int, conversation_id: int | None
+) -> Conversation:
     """Existing conversations continue the same thread (short-term memory);
     no id means start a fresh one. Nothing here writes to any long-term
-    memory store — a conversation's history only lives as long as its rows."""
+    memory store — a conversation's history only lives as long as its rows.
+
+    A conversation owned by another user is treated as not found, not
+    forbidden — this avoids confirming to a caller that a given id
+    belongs to someone else."""
     if conversation_id is not None:
         conversation = db.get(Conversation, conversation_id)
-        if conversation is None:
+        if conversation is None or conversation.user_id != user_id:
             raise ConversationNotFoundError(conversation_id)
         return conversation
 
-    conversation = Conversation()
+    conversation = Conversation(user_id=user_id)
     db.add(conversation)
     db.flush()
     return conversation

@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 
 import Sidebar from "./components/Sidebar.jsx";
+import AuthPage from "./pages/AuthPage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import DocumentsPage from "./pages/DocumentsPage.jsx";
 import {
   deleteConversation,
   getConversation,
+  getCurrentUser,
+  getAuthToken,
   listConversations,
+  onUnauthorized,
   sendChatMessage,
+  setAuthToken,
   uploadDocument,
 } from "./services/api.js";
 
@@ -23,6 +28,9 @@ function messagesFromHistory(history) {
 }
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
   const [view, setView] = useState("chat");
   const [conversations, setConversations] = useState([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
@@ -40,6 +48,39 @@ export default function App() {
     setTimeout(() => setNotification((current) => (current?.text === text ? null : current)), 4000);
   };
 
+  const resetChatState = () => {
+    setView("chat");
+    setConversations([]);
+    setActiveConversationId(null);
+    setActiveTitle("");
+    setMessages([]);
+    setInput("");
+    setPendingImage(null);
+    setNotification(null);
+  };
+
+  const handleLogout = () => {
+    setAuthToken(null);
+    setUser(null);
+    resetChatState();
+  };
+
+  // Validate any stored token once on load, and react to any 401 from the
+  // API by logging out — a token can expire mid-session.
+  useEffect(() => {
+    onUnauthorized(handleLogout);
+
+    const token = getAuthToken();
+    if (!token) {
+      setIsCheckingAuth(false);
+      return;
+    }
+    getCurrentUser()
+      .then((data) => setUser(data))
+      .catch(() => setAuthToken(null))
+      .finally(() => setIsCheckingAuth(false));
+  }, []);
+
   const refreshConversations = async () => {
     try {
       const data = await listConversations();
@@ -52,8 +93,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    refreshConversations();
-  }, []);
+    if (user) refreshConversations();
+  }, [user]);
+
+  const handleAuthenticated = (authenticatedUser) => {
+    setUser(authenticatedUser);
+  };
 
   const handleNewChat = () => {
     setActiveConversationId(null);
@@ -181,6 +226,14 @@ export default function App() {
     setIsSidebarOpen(false);
   };
 
+  if (isCheckingAuth) {
+    return <div className="auth-loading-screen">Loading…</div>;
+  }
+
+  if (!user) {
+    return <AuthPage onAuthenticated={handleAuthenticated} />;
+  }
+
   return (
     <div className="app-layout">
       <Sidebar
@@ -196,6 +249,8 @@ export default function App() {
         onDeleteConversation={handleDeleteConversation}
         isLoading={isLoadingConversations}
         isOpen={isSidebarOpen}
+        user={user}
+        onLogout={handleLogout}
       />
       {isSidebarOpen && (
         <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />

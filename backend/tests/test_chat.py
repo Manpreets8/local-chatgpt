@@ -6,14 +6,19 @@ from app.services import llm_service as llm_service_module
 client = TestClient(app)
 
 
-def test_chat_creates_conversation_and_returns_reply(db_session, monkeypatch):
+def test_chat_requires_auth(db_session):
+    response = client.post("/chat", json={"message": "hello"})
+    assert response.status_code == 401
+
+
+def test_chat_creates_conversation_and_returns_reply(db_session, auth_headers, monkeypatch):
     monkeypatch.setattr(
         llm_service_module.llm_service,
         "chat",
         lambda messages: f"echo: {messages[-1]['content']}",
     )
 
-    response = client.post("/chat", json={"message": "hello"})
+    response = client.post("/chat", json={"message": "hello"}, headers=auth_headers)
 
     assert response.status_code == 200
     body = response.json()
@@ -21,56 +26,86 @@ def test_chat_creates_conversation_and_returns_reply(db_session, monkeypatch):
     assert isinstance(body["conversation_id"], int)
 
 
-def test_chat_remembers_earlier_messages_in_same_conversation(db_session, monkeypatch):
+def test_chat_remembers_earlier_messages_in_same_conversation(
+    db_session, auth_headers, monkeypatch
+):
     monkeypatch.setattr(
         llm_service_module.llm_service,
         "chat",
         lambda messages: f"echo: {messages[-1]['content']}",
     )
 
-    first = client.post("/chat", json={"message": "My name is Manpreet."})
+    first = client.post(
+        "/chat", json={"message": "My name is Manpreet."}, headers=auth_headers
+    )
     conversation_id = first.json()["conversation_id"]
 
     second = client.post(
         "/chat",
         json={"message": "What is my name?", "conversation_id": conversation_id},
+        headers=auth_headers,
     )
     assert second.status_code == 200
 
-    detail = client.get(f"/conversations/{conversation_id}")
+    detail = client.get(f"/conversations/{conversation_id}", headers=auth_headers)
     messages = detail.json()["messages"]
     assert len(messages) == 4
     assert messages[0]["content"] == "My name is Manpreet."
     assert messages[2]["content"] == "What is my name?"
 
 
-def test_chat_sets_conversation_title_from_first_message(db_session, monkeypatch):
+def test_chat_sets_conversation_title_from_first_message(db_session, auth_headers, monkeypatch):
     monkeypatch.setattr(llm_service_module.llm_service, "chat", lambda messages: "a reply")
 
-    response = client.post("/chat", json={"message": "What is supervised learning?"})
+    response = client.post(
+        "/chat", json={"message": "What is supervised learning?"}, headers=auth_headers
+    )
     conversation_id = response.json()["conversation_id"]
 
-    detail = client.get(f"/conversations/{conversation_id}")
+    detail = client.get(f"/conversations/{conversation_id}", headers=auth_headers)
     assert detail.json()["title"] == "What is supervised learning?"
 
 
-def test_chat_rejects_empty_message(db_session):
-    response = client.post("/chat", json={"message": ""})
+def test_chat_rejects_empty_message(db_session, auth_headers):
+    response = client.post("/chat", json={"message": ""}, headers=auth_headers)
     assert response.status_code == 422
 
 
-def test_chat_returns_404_for_unknown_conversation(db_session):
-    response = client.post("/chat", json={"message": "hi", "conversation_id": 9999})
+def test_chat_returns_404_for_unknown_conversation(db_session, auth_headers):
+    response = client.post(
+        "/chat", json={"message": "hi", "conversation_id": 9999}, headers=auth_headers
+    )
     assert response.status_code == 404
 
 
-def test_chat_returns_503_when_llm_not_configured(db_session, monkeypatch):
+def test_chat_returns_404_for_another_users_conversation(db_session, auth_headers, monkeypatch):
+    monkeypatch.setattr(llm_service_module.llm_service, "chat", lambda messages: "a reply")
+
+    owner_response = client.post(
+        "/chat", json={"message": "my private chat"}, headers=auth_headers
+    )
+    conversation_id = owner_response.json()["conversation_id"]
+
+    other_user = client.post(
+        "/auth/register", json={"email": "other@example.com", "password": "password123"}
+    )
+    other_headers = {"Authorization": f"Bearer {other_user.json()['access_token']}"}
+
+    response = client.post(
+        "/chat",
+        json={"message": "trying to hijack", "conversation_id": conversation_id},
+        headers=other_headers,
+    )
+    assert response.status_code == 404
+
+
+def test_chat_returns_503_when_llm_not_configured(db_session, auth_headers, monkeypatch):
     def raise_not_configured(messages):
         raise llm_service_module.LLMNotConfiguredError("not configured")
 
     monkeypatch.setattr(llm_service_module.llm_service, "chat", raise_not_configured)
 
-    response = client.post("/chat", json={"message": "hello"})
+    response = client.post("/chat", json={"message": "hello"}, headers=auth_headers)
     assert response.status_code == 503
 
 
@@ -81,7 +116,7 @@ TINY_PNG_BASE64 = (
 )
 
 
-def test_chat_accepts_image_only_message_without_text(db_session, monkeypatch):
+def test_chat_accepts_image_only_message_without_text(db_session, auth_headers, monkeypatch):
     captured = {}
 
     def fake_chat(messages):
@@ -97,6 +132,7 @@ def test_chat_accepts_image_only_message_without_text(db_session, monkeypatch):
             "image_data": TINY_PNG_BASE64,
             "image_media_type": "image/png",
         },
+        headers=auth_headers,
     )
 
     assert response.status_code == 200
@@ -107,20 +143,23 @@ def test_chat_accepts_image_only_message_without_text(db_session, monkeypatch):
     assert last_content[1]["type"] == "text"
 
 
-def test_chat_stores_placeholder_text_for_image_only_message(db_session, monkeypatch):
+def test_chat_stores_placeholder_text_for_image_only_message(
+    db_session, auth_headers, monkeypatch
+):
     monkeypatch.setattr(llm_service_module.llm_service, "chat", lambda messages: "a reply")
 
     response = client.post(
         "/chat",
         json={"message": "", "image_data": TINY_PNG_BASE64, "image_media_type": "image/png"},
+        headers=auth_headers,
     )
     conversation_id = response.json()["conversation_id"]
 
-    detail = client.get(f"/conversations/{conversation_id}")
+    detail = client.get(f"/conversations/{conversation_id}", headers=auth_headers)
     assert detail.json()["messages"][0]["content"] == "[Image attached]"
 
 
-def test_chat_rejects_unsupported_image_type(db_session):
+def test_chat_rejects_unsupported_image_type(db_session, auth_headers):
     response = client.post(
         "/chat",
         json={
@@ -128,10 +167,11 @@ def test_chat_rejects_unsupported_image_type(db_session):
             "image_data": TINY_PNG_BASE64,
             "image_media_type": "application/pdf",
         },
+        headers=auth_headers,
     )
     assert response.status_code == 422
 
 
-def test_chat_rejects_no_text_and_no_image(db_session):
-    response = client.post("/chat", json={"message": "   "})
+def test_chat_rejects_no_text_and_no_image(db_session, auth_headers):
+    response = client.post("/chat", json={"message": "   "}, headers=auth_headers)
     assert response.status_code == 422

@@ -5,8 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import get_current_user
 from app.models.document import Document, DocumentStatus
 from app.models.document_chunk import DocumentChunk
+from app.models.user import User
 from app.schemas.document import DocumentDetail, DocumentSummary
 from app.services import document_service
 
@@ -18,7 +20,9 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post("/upload", response_model=DocumentDetail, status_code=201)
 async def upload_document(
-    file: UploadFile = File(...), db: Session = Depends(get_db)
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Document:
     file_bytes = await file.read()
 
@@ -30,6 +34,7 @@ async def upload_document(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     document = Document(
+        user_id=current_user.id,
         filename=file.filename,
         content_type=file.content_type,
         file_size_bytes=len(file_bytes),
@@ -73,23 +78,37 @@ async def upload_document(
 
 
 @router.get("", response_model=list[DocumentSummary])
-def list_documents(db: Session = Depends(get_db)) -> list[Document]:
-    stmt = select(Document).order_by(Document.created_at.desc())
+def list_documents(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+) -> list[Document]:
+    stmt = (
+        select(Document)
+        .where(Document.user_id == current_user.id)
+        .order_by(Document.created_at.desc())
+    )
     return list(db.scalars(stmt))
 
 
 @router.get("/{document_id}", response_model=DocumentDetail)
-def get_document(document_id: int, db: Session = Depends(get_db)) -> Document:
+def get_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Document:
     document = db.get(Document, document_id)
-    if document is None:
+    if document is None or document.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Document not found")
     return document
 
 
 @router.delete("/{document_id}", status_code=204)
-def delete_document(document_id: int, db: Session = Depends(get_db)) -> None:
+def delete_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
     document = db.get(Document, document_id)
-    if document is None:
+    if document is None or document.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Document not found")
     db.delete(document)
     db.commit()

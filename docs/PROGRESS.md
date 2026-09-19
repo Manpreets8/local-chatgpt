@@ -72,6 +72,31 @@ Tracking features from the spec as they're built, one at a time.
       correctly identified "solid red square") and a real doc upload,
       both through the actual browser UI via Playwright.
 
+- [x] Feature 9: Auth — `users` table (Alembic migration), bcrypt password
+      hashing (used directly, not via passlib — passlib 1.7.4 can't detect
+      modern bcrypt 4.x as a backend and throws on its own self-test; a
+      known, unmaintained-package compatibility bug, not a config mistake),
+      JWT access tokens (python-jose). `POST /auth/register`,
+      `POST /auth/login`, `GET /auth/me`. `conversations` and `documents`
+      gained a `user_id` FK; every existing endpoint (`/chat`,
+      `/conversations/*`, `/documents/*`) now requires a valid token via a
+      `get_current_user` dependency, and every query is scoped to the
+      caller — accessing another user's conversation/document by id
+      returns 404 (not 403), so existence isn't leaked either.
+      Frontend: a dedicated login/sign-up page (toggle between modes,
+      matches the app's dark theme) gates the whole app; JWT stored in
+      localStorage and attached to every request; a 401 anywhere logs the
+      user out automatically (handles token expiry mid-session); sidebar
+      shows the logged-in email with a Log out button.
+      53 backend tests passing (up from 37), including cross-user
+      isolation tests (user B gets 404 reading user A's conversation/
+      document by id) and auth-required checks on every protected route.
+      Verified live end to end via Playwright: sign up, chat while
+      authenticated, log out, log back in, conversation history correctly
+      persisted, and the session survives a full page reload. Also
+      verified live via curl that a second real user cannot read a first
+      user's conversation by guessing/reusing its id.
+
 ## Up Next
 
 - [ ] Feature 4: RAG — embeddings (Sentence Transformers) + FAISS
@@ -80,7 +105,6 @@ Tracking features from the spec as they're built, one at a time.
 - [ ] Feature 6: Tool-using agent (calculator, doc search, db search, date/time).
 - [ ] Feature 7: Resume analyzer.
 - [ ] Feature 8: AI document summaries.
-- [ ] Feature 9: Auth (register/login, JWT, password hashing).
 - [ ] Feature 10: Full dashboard UI (settings page, resume analyzer page).
 - [ ] Feature 11: RAG evaluation.
 - [ ] Docker Compose wiring for backend + frontend containers (Postgres

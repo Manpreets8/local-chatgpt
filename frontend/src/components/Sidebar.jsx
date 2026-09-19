@@ -21,6 +21,8 @@ export default function Sidebar({
   onDeleteConversation,
   isLoading,
   isOpen,
+  user,
+  onLogout,
 }) {
   return (
     <aside className={`sidebar ${isOpen ? "sidebar--open" : ""}`}>
@@ -89,6 +91,17 @@ export default function Sidebar({
             ))}
           </div>
         </>
+      )}
+
+      {user && (
+        <div className="sidebar-account">
+          <span className="sidebar-account-email" title={user.email}>
+            {user.email}
+          </span>
+          <button type="button" className="sidebar-logout-button" onClick={onLogout}>
+            Log out
+          </button>
+        </div>
       )}
     </aside>
   );

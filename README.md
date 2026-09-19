@@ -89,7 +89,9 @@ cp .env.example .env
 npm run dev
 ```
 
-Then visit http://localhost:5173 for the chat UI.
+Then visit http://localhost:5173 — you'll land on the sign-up/login page
+first. Create an account to start chatting; conversations and documents are
+private to your account.
 
 ## Running Tests
 
@@ -105,7 +107,8 @@ Copy `.env.example` to `.env` at the project root and fill in real secrets
 
 ## Status
 
-Currently implemented: project scaffolding + a health-check endpoint.
-Everything else in the feature list (chat, memory, RAG, tools, resume
-analyzer, auth, frontend, etc.) is being added incrementally — see
-[docs/PROGRESS.md](docs/PROGRESS.md).
+Implemented so far: chat (Claude API), conversation memory (PostgreSQL),
+document upload (PDF/TXT/DOCX extraction + chunking), image attachments
+(Claude vision), and authentication (JWT, bcrypt, per-user data isolation).
+Being built incrementally — see [docs/PROGRESS.md](docs/PROGRESS.md) for
+what's done and what's next (RAG, tool-calling agent, resume analyzer).

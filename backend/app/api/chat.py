@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import get_current_user
+from app.models.user import User
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services import conversation_service
 from app.services.llm_service import LLMNotConfiguredError, llm_service
@@ -11,11 +13,15 @@ router = APIRouter(tags=["chat"])
 
 
 @router.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
+def chat(
+    request: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChatResponse:
     is_new_conversation = request.conversation_id is None
     try:
         conversation = conversation_service.get_or_create_conversation(
-            db, request.conversation_id
+            db, current_user.id, request.conversation_id
         )
     except conversation_service.ConversationNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
