@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Project root is three levels up from this file (core -> app -> backend -> root).
@@ -33,6 +34,17 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @model_validator(mode="after")
+    def _strip_string_values(self) -> "Settings":
+        # Env vars pasted through a dashboard UI (Render, etc.) can pick up
+        # a stray trailing newline or spaces, which breaks things like HTTP
+        # headers built from an API key in a way that's hard to spot by eye.
+        for name in self.model_fields:
+            value = getattr(self, name)
+            if isinstance(value, str):
+                setattr(self, name, value.strip())
+        return self
 
 
 @lru_cache

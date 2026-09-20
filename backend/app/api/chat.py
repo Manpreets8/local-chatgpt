@@ -55,10 +55,7 @@ def chat(
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except APIError as exc:
         db.rollback()
-        cause = f" | cause: {exc.__cause__!r}" if exc.__cause__ else ""
-        raise HTTPException(
-            status_code=502, detail=f"AI service error: {exc!r}{cause}"
-        ) from exc
+        raise HTTPException(status_code=502, detail=f"AI service error: {exc}") from exc
 
     conversation_service.add_message(db, conversation, "assistant", reply)
     db.commit()
