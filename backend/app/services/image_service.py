@@ -1,9 +1,25 @@
+import re
 import urllib.parse
 
 import httpx
 
 POLLINATIONS_BASE_URL = "https://image.pollinations.ai/prompt"
 POLLINATIONS_MODEL = "sana"
+
+# The free "sana" model defaults hard toward photorealism, especially for
+# landscape/wide scenes — testing showed even negative prompts can't fully
+# override that for those compositions. It does respond well to explicit
+# style/material keywords for single-subject or character prompts, so we
+# reinforce style only when the user's own prompt signals they want one
+# (never force a look the user didn't ask for).
+_STYLE_KEYWORDS = re.compile(
+    r"\b(3d|three[- ]?d|pixar|cgi|cartoon|animat\w*|claymation|toy|figurine)\b",
+    re.IGNORECASE,
+)
+_STYLE_BOOST = (
+    ", 3D render, CGI, Pixar animation style, glossy toy-like materials, "
+    "studio lighting, octane render, stylized illustration, not photorealistic"
+)
 
 
 class ImageServiceError(Exception):
@@ -20,16 +36,30 @@ class ImageService:
     there's no "not configured" error case here unlike the other
     services in this app."""
 
+    def _build_prompt(self, prompt: str) -> str:
+        if _STYLE_KEYWORDS.search(prompt):
+            return prompt + _STYLE_BOOST
+        return prompt
+
     def generate_image(self, prompt: str) -> tuple[bytes, str]:
         """Returns (image_bytes, content_type) — Pollinations may return
         PNG or JPEG depending on the model, so the caller shouldn't
         assume a fixed format."""
-        encoded_prompt = urllib.parse.quote(prompt)
+        built_prompt = self._build_prompt(prompt)
+        encoded_prompt = urllib.parse.quote(built_prompt)
         url = f"{POLLINATIONS_BASE_URL}/{encoded_prompt}"
 
         try:
             response = httpx.get(
-                url, params={"model": POLLINATIONS_MODEL, "nologo": "true"}, timeout=60
+                url,
+                params={
+                    "model": POLLINATIONS_MODEL,
+                    "nologo": "true",
+                    "enhance": "true",
+                    "width": 1024,
+                    "height": 1024,
+                },
+                timeout=60,
             )
         except httpx.HTTPError as exc:
             raise ImageServiceError(f"Could not reach the image service: {exc}") from exc
