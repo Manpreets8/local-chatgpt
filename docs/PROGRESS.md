@@ -126,6 +126,41 @@ Tracking features from the spec as they're built, one at a time.
       it persists correctly after a full page reload and reopening the
       conversation.
 
+- [x] Deployed to production — Vercel (frontend), Render (backend,
+      Docker-based, migrations run automatically on every deploy),
+      Neon (Postgres). All free tiers, no cards required. Verified
+      live end to end via Playwright against the real public URLs
+      (sign up, real Claude chat, mobile layout), not just localhost.
+      Two real bugs found and fixed along the way, both general
+      hardening, not one-off patches: (1) Render's "Docker Command"
+      field had the Dockerfile *path* typed into it by mistake,
+      overriding the image's own CMD and crashing every deploy
+      instantly; (2) the Anthropic key picked up an invisible trailing
+      newline when pasted into Render's dashboard, which httpx
+      correctly refused to send as a header value — fixed by having
+      `Settings` strip whitespace from every string field on load, so
+      this can't recur regardless of which platform or paste path a
+      secret goes through. Known constraint: free tier means the
+      backend spins down after ~15 min idle and takes 30-60s to wake
+      on the next request — expected, not a bug.
+
+- [x] Image generation quality pass — tested three levers live
+      against the free Pollinations model before changing anything:
+      explicit width/height (was requesting none at all before, so
+      resolution was whatever the default happened to be), `enhance`
+      (Pollinations' own prompt-rewriting), and style-keyword
+      reinforcement. Finding, confirmed by direct comparison images:
+      the free `sana` model has a hard photorealism bias for
+      landscape/wide scenes that not even an explicit negative prompt
+      overrides — a real ceiling of the free model, not a prompting
+      problem. It does follow explicit style/material keywords well
+      for single-subject/character prompts. Shipped the parts that
+      measurably help: 1024x1024 requests, `enhance=true` always, and
+      automatic style-boost keywords added only when the user's own
+      prompt already signals 3D/animated/cartoon intent (never forced
+      onto prompts that don't ask for it). 5 new unit tests, 67
+      backend tests passing total.
+
 ## Up Next
 
 - [ ] Feature 4: RAG — embeddings (Sentence Transformers) + FAISS
