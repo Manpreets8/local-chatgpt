@@ -161,6 +161,25 @@ Tracking features from the spec as they're built, one at a time.
       onto prompts that don't ask for it). 5 new unit tests, 67
       backend tests passing total.
 
+- [x] Welcome email on signup — sent via Gmail SMTP (stdlib `smtplib`,
+      no third-party SDK) as a non-blocking FastAPI `BackgroundTask`,
+      so a slow/flaky mail server can never delay or break signup.
+      Started with Resend (a proper transactional email API) but
+      discovered live that its free/unverified-domain tier can only
+      send to the account's own address — every other recipient gets
+      a 403, which would mean the feature only worked for the
+      developer's own test account, not real users. Switched to Gmail
+      SMTP instead, confirmed live it has no such restriction (sent
+      successfully to a second, unrelated address). Needs a Gmail
+      App Password (requires 2-Step Verification), not the account's
+      normal password. Also fixed a real test-suite bug found in the
+      process: registration's background email task was making *real*
+      SMTP connections during every auth test once real credentials
+      landed in `.env`, silently making the suite minutes slower —
+      added an autouse fixture that stubs the real send for every test
+      except `test_email_service.py`'s own, which mocks `smtplib`
+      directly and needs the real method. 71 backend tests passing.
+
 ## Up Next
 
 - [ ] Feature 4: RAG — embeddings (Sentence Transformers) + FAISS

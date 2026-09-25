@@ -12,6 +12,25 @@ from app.main import app
 _email_counter = itertools.count(1)
 
 
+@pytest.fixture(autouse=True)
+def _no_real_emails(request, monkeypatch):
+    """Safety net for every test, not just email-specific ones:
+    registration triggers a background task that sends a real welcome
+    email using whatever SMTP credentials happen to be in the ambient
+    .env file. Without this, the whole suite would attempt real SMTP
+    connections on every registration test, regardless of which file
+    is running or whether it's about email at all.
+
+    Excludes test_email_service.py, which needs the real method to
+    test it (and already mocks smtplib itself, so it's still safe)."""
+    if request.module.__name__.endswith("test_email_service"):
+        return
+    monkeypatch.setattr(
+        "app.services.email_service.email_service.send_welcome_email",
+        lambda to_email: None,
+    )
+
+
 @pytest.fixture()
 def db_session():
     """In-memory SQLite so DB-backed tests run without Docker/Postgres.
